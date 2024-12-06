@@ -130,24 +130,13 @@ func emulatedStorageVersion(binaryVersionOfResource schema.GroupVersion, example
 	gvks, _, err := scheme.ObjectKinds(example)
 	if err != nil {
 		return schema.GroupVersion{}, err
-	}
-
-	var gvk schema.GroupVersionKind
-	for _, item := range gvks {
-		if item.Group != binaryVersionOfResource.Group {
-			continue
-		}
-
-		gvk = item
-		break
-	}
-
-	if len(gvk.Kind) == 0 {
+	} else if len(gvks) == 0 {
+		// Probably shouldn't happen if err is non-nil
 		return schema.GroupVersion{}, fmt.Errorf("object %T has no GVKs registered in scheme", example)
 	}
 
 	// VersionsForGroupKind returns versions in priority order
-	versions := scheme.VersionsForGroupKind(schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind})
+	versions := scheme.VersionsForGroupKind(schema.GroupKind{Group: gvks[0].Group, Kind: gvks[0].Kind})
 
 	compatibilityVersion := effectiveVersion.MinCompatibilityVersion()
 
@@ -159,7 +148,7 @@ func emulatedStorageVersion(binaryVersionOfResource schema.GroupVersion, example
 		gvk := schema.GroupVersionKind{
 			Group:   gv.Group,
 			Version: gv.Version,
-			Kind:    gvk.Kind,
+			Kind:    gvks[0].Kind,
 		}
 
 		exampleOfGVK, err := scheme.New(gvk)
